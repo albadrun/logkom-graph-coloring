@@ -8,13 +8,15 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 /**
- * @author John B. Matthews; distribution per GPL.
+ * @author Ragil, Tirta, Usama
+ * Modified from John B. Matthews code (distribution per GPL).
+ * https://sites.google.com/site/drjohnbmatthews/graphpanel
  */
 public class GraphPanel extends JComponent {
 
     private static final int WIDE = 640;
     private static final int HIGH = 480;
-    private static final int RADIUS = 35;
+    private static final int RADIUS = 25;
     private static final Random rnd = new Random();
     private ControlPanel control = new ControlPanel();
     private int radius = RADIUS;
@@ -142,47 +144,58 @@ public class GraphPanel extends JComponent {
         private Action connect = new ConnectAction("Connect");
         private Action delete = new DeleteAction("Delete");
         private Action random = new RandomAction("Random");
+        private Action help = new HelpAction("Help");
         private JButton defaultButton = new JButton(newNode);
         private JComboBox kindCombo = new JComboBox();
-        private ColorIcon hueIcon = new ColorIcon(Color.blue);
+        private ColorIcon hueIcon = new ColorIcon(Node.NONE_COLOR);
         private JPopupMenu popup = new JPopupMenu();
 
+        /*
+         * Control Panel constructor.
+         * Unused feature is commented.
+         */
         ControlPanel() {
             this.setLayout(new FlowLayout(FlowLayout.LEFT));
             this.setBackground(Color.lightGray);
 
             this.add(defaultButton);
             this.add(new JButton(clearAll));
-            this.add(kindCombo);
+
+            // this.add(kindCombo);
+
             this.add(new JButton(color));
             this.add(new JLabel(hueIcon));
-            JSpinner js = new JSpinner();
-            js.setModel(new SpinnerNumberModel(RADIUS, 5, 100, 5));
-            js.addChangeListener(new ChangeListener() {
 
-                @Override
-                public void stateChanged(ChangeEvent e) {
-                    JSpinner s = (JSpinner) e.getSource();
-                    radius = (Integer) s.getValue();
-                    Node.updateRadius(nodes, radius);
-                    GraphPanel.this.repaint();
-                }
-            });
-            this.add(new JLabel("Size:"));
-            this.add(js);
+            // JSpinner js = new JSpinner();
+            // js.setModel(new SpinnerNumberModel(RADIUS, 5, 100, 5));
+            // js.addChangeListener(new ChangeListener() {
+
+            //     @Override
+            //     public void stateChanged(ChangeEvent e) {
+            //         JSpinner s = (JSpinner) e.getSource();
+            //         radius = (Integer) s.getValue();
+            //         Node.updateRadius(nodes, radius);
+            //         GraphPanel.this.repaint();
+            //     }
+            // });
+            // this.add(new JLabel("Size:"));
+            // this.add(js);
+
             this.add(new JButton(random));
+            this.add(new JButton(help));
 
             popup.add(new JMenuItem(newNode));
             popup.add(new JMenuItem(color));
             popup.add(new JMenuItem(connect));
             popup.add(new JMenuItem(delete));
-            JMenu subMenu = new JMenu("Kind");
-            for (Kind k : Kind.values()) {
-                kindCombo.addItem(k);
-                subMenu.add(new JMenuItem(new KindItemAction(k)));
-            }
-            popup.add(subMenu);
-            kindCombo.addActionListener(kind);
+
+            // JMenu subMenu = new JMenu("Kind");
+            // for (Kind k : Kind.values()) {
+            //     kindCombo.addItem(k);
+            //     subMenu.add(new JMenuItem(new KindItemAction(k)));
+            // }
+            // popup.add(subMenu);
+            // kindCombo.addActionListener(kind);
         }
 
         class KindItemAction extends AbstractAction {
@@ -222,14 +235,25 @@ public class GraphPanel extends JComponent {
 
         public void actionPerformed(ActionEvent e) {
             Color color = control.hueIcon.getColor();
-            color = JColorChooser.showDialog(
-                GraphPanel.this, "Choose a color", color);
+
+            String colorString = (String) JOptionPane.showInputDialog(
+                GraphPanel.this,
+                "Choose one color",
+                "Input",
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                Node.POSSIBLE_COLORS_STRING,
+                Node.POSSIBLE_COLORS_STRING[0]
+            );
+            color = Node.stringToColor(colorString);
             if (color != null) {
                 Node.updateColor(nodes, color);
                 control.hueIcon.setColor(color);
-                control.repaint();
-                repaint();
+            } else {
+                control.hueIcon.setColor(Node.NONE_COLOR);
             }
+            control.repaint();
+            repaint();
         }
     }
 
@@ -305,7 +329,12 @@ public class GraphPanel extends JComponent {
             Node.selectNone(nodes);
             Point p = mousePt.getLocation();
             Color color = control.hueIcon.getColor();
-            Node n = new Node(p, radius, color, kind);
+            Node n;
+            if (!color.equals(Node.NONE_COLOR)) {
+                n = new Node(p, radius, color, kind);
+            } else {
+                n = new Node(p, radius, kind);
+            }
             n.setSelected(true);
             nodes.add(n);
             repaint();
@@ -319,11 +348,50 @@ public class GraphPanel extends JComponent {
         }
 
         public void actionPerformed(ActionEvent e) {
-            for (int i = 0; i < 16; i++) {
+            int total = 8;
+            int lastIndex = nodes.size();
+
+            for (int i = 0; i < total; i++) {
                 Point p = new Point(rnd.nextInt(getWidth()), rnd.nextInt(getHeight()));
-                nodes.add(new Node(p, radius, new Color(rnd.nextInt()), kind));
+                nodes.add(new Node(p, radius, kind));
+            }
+            int maxEdges = (total * (total - 1)) / 2;
+            int numEdges = rnd.nextInt(maxEdges) + 1;
+
+            int cnt = 0;
+            while (cnt < numEdges) {
+                Node n1 = nodes.get(rnd.nextInt(8) + lastIndex);
+                Node n2 = nodes.get(rnd.nextInt(8) + lastIndex);
+
+                boolean isExists = false;
+                for (int j = 0; j < edges.size(); j++) {
+                    Node fNode = edges.get(j).getFirstNode();
+                    Node sNode = edges.get(j).getSecondNode();
+
+                    if ((fNode.equals(n1) && sNode.equals(n2)) || (fNode.equals(n2) && sNode.equals(n1))) {
+                        isExists = true;
+                        break;
+                    }
+                }
+
+                if (!isExists) {
+                    edges.add(new Edge(n1, n2));
+                    cnt++;
+                }
             }
             repaint();
+        }
+    }
+
+    private class HelpAction extends AbstractAction {
+
+        public HelpAction(String name) {
+            super(name);
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            String msg = "Hello friends.\nPress shift to select multiple objects. Right click and connect.";
+            JOptionPane.showMessageDialog(GraphPanel.this, msg);
         }
     }
 
@@ -354,6 +422,14 @@ public class GraphPanel extends JComponent {
             g.setColor(Color.darkGray);
             g.drawLine(p1.x, p1.y, p2.x, p2.y);
         }
+
+        public Node getFirstNode() {
+            return n1;
+        }
+
+        public Node getSecondNode() {
+            return n2;
+        }
     }
 
     /**
@@ -368,14 +444,40 @@ public class GraphPanel extends JComponent {
         private boolean selected = false;
         private Rectangle b = new Rectangle();
 
+        private static final String K_NONE = "None";
+        private static final String K_RED = "Red";
+        private static final String K_GREEN = "Green";
+        private static final String K_BLUE = "Blue";
+
+        private static final int STROKE_SIZE = 3;
+        private static final int SELECTED_STROKE_SIZE = 1;
+        private static final Color OUTLINE_COLOR = Color.black;
+
+        private static final Color NONE_COLOR = Color.white;
+
+        public static final String POSSIBLE_COLORS_STRING[] = {
+            Node.K_NONE, Node.K_RED, Node.K_GREEN, Node.K_BLUE
+        };
+
         /**
-         * Construct a new node.
+         * Construct a new node with color.
          */
         public Node(Point p, int r, Color color, Kind kind) {
             this.p = p;
             this.r = r;
             this.color = color;
             this.kind = kind;
+            setBoundary(b);
+        }
+
+        /**
+         * Construct a new node without color.
+         */
+        public Node(Point p, int r, Kind kind) {
+            this.p = p;
+            this.r = r;
+            this.kind = kind;
+            this.color = null;
             setBoundary(b);
         }
 
@@ -390,17 +492,33 @@ public class GraphPanel extends JComponent {
          * Draw this node.
          */
         public void draw(Graphics g) {
-            g.setColor(this.color);
-            if (this.kind == Kind.Circular) {
-                g.fillOval(b.x, b.y, b.width, b.height);
-            } else if (this.kind == Kind.Rounded) {
-                g.fillRoundRect(b.x, b.y, b.width, b.height, r, r);
-            } else if (this.kind == Kind.Square) {
-                g.fillRect(b.x, b.y, b.width, b.height);
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setStroke(new BasicStroke(Node.STROKE_SIZE));
+
+            if (this.color == null) {
+                g2.setColor(Node.OUTLINE_COLOR);
+                if (this.kind == Kind.Circular) {
+                    g2.drawOval(b.x, b.y, b.width, b.height);
+                } else if (this.kind == Kind.Rounded) {
+                    g2.drawRoundRect(b.x, b.y, b.width, b.height, r, r);
+                } else if (this.kind == Kind.Square) {
+                    g2.drawRect(b.x, b.y, b.width, b.height);
+                }
+            } else {
+                g2.setColor(this.color);
+                if (this.kind == Kind.Circular) {
+                    g2.fillOval(b.x, b.y, b.width, b.height);
+                } else if (this.kind == Kind.Rounded) {
+                    g2.fillRoundRect(b.x, b.y, b.width, b.height, r, r);
+                } else if (this.kind == Kind.Square) {
+                    g2.fillRect(b.x, b.y, b.width, b.height);
+                }
             }
+
+            g2.setStroke(new BasicStroke(Node.SELECTED_STROKE_SIZE));
             if (selected) {
-                g.setColor(Color.darkGray);
-                g.drawRect(b.x, b.y, b.width, b.height);
+                g2.setColor(Color.darkGray);
+                g2.drawRect(b.x, b.y, b.width, b.height);
             }
         }
 
@@ -534,6 +652,25 @@ public class GraphPanel extends JComponent {
                     n.kind = kind;
                 }
             }
+        }
+
+        /**
+         *
+         */
+        public static Color stringToColor(String colorString) {
+            if (colorString == null) {
+                return null;
+            }
+
+            if (colorString.equals(Node.K_RED)) {
+                return Color.red;
+            } else if (colorString.equals(Node.K_GREEN)) {
+                return Color.green;
+            } else if (colorString.equals(Node.K_BLUE)) {
+                return Color.blue;
+            }
+
+            return null;
         }
     }
 
