@@ -144,6 +144,7 @@ public class GraphPanel extends JComponent {
         private Action connect = new ConnectAction("Connect");
         private Action delete = new DeleteAction("Delete");
         private Action random = new RandomAction("Random");
+        private Action run = new RunAction("Run");
         private Action help = new HelpAction("Help");
         private JButton defaultButton = new JButton(newNode);
         private JComboBox kindCombo = new JComboBox();
@@ -182,6 +183,7 @@ public class GraphPanel extends JComponent {
             // this.add(js);
 
             this.add(new JButton(random));
+            this.add(new JButton(run));
             this.add(new JButton(help));
 
             popup.add(new JMenuItem(newNode));
@@ -246,8 +248,8 @@ public class GraphPanel extends JComponent {
                 Node.POSSIBLE_COLORS_STRING[0]
             );
             color = Node.stringToColor(colorString);
+            Node.updateColor(nodes, color);
             if (color != null) {
-                Node.updateColor(nodes, color);
                 control.hueIcon.setColor(color);
             } else {
                 control.hueIcon.setColor(Node.NONE_COLOR);
@@ -383,6 +385,17 @@ public class GraphPanel extends JComponent {
         }
     }
 
+    private class RunAction extends AbstractAction {
+
+        public RunAction(String name) {
+            super(name);
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            // implement disini us
+        }
+    }
+
     private class HelpAction extends AbstractAction {
 
         public HelpAction(String name) {
@@ -443,6 +456,9 @@ public class GraphPanel extends JComponent {
         private Kind kind;
         private boolean selected = false;
         private Rectangle b = new Rectangle();
+        private int index = 0;
+
+        private static int indexCounter = 0;
 
         private static final String K_NONE = "None";
         private static final String K_RED = "Red";
@@ -467,6 +483,7 @@ public class GraphPanel extends JComponent {
             this.r = r;
             this.color = color;
             this.kind = kind;
+            this.index = Node.indexCounter++;
             setBoundary(b);
         }
 
@@ -478,6 +495,7 @@ public class GraphPanel extends JComponent {
             this.r = r;
             this.kind = kind;
             this.color = null;
+            this.index = Node.indexCounter++;
             setBoundary(b);
         }
 
@@ -654,9 +672,6 @@ public class GraphPanel extends JComponent {
             }
         }
 
-        /**
-         *
-         */
         public static Color stringToColor(String colorString) {
             if (colorString == null) {
                 return null;
@@ -671,6 +686,10 @@ public class GraphPanel extends JComponent {
             }
 
             return null;
+        }
+
+        public int getIndex() {
+            return this.index;
         }
     }
 
