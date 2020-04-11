@@ -1,11 +1,14 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
+import java.util.Scanner;
+
 import javax.swing.*;
 import javax.swing.event.*;
 
@@ -374,69 +377,99 @@ public class GraphPanel extends JComponent {
 
     private class RunAction extends AbstractAction {
         private StringBuilder strBuilder;
+        private int clauses;
+        private int totalColor;
+        private int literals;
 
         public RunAction(String name) {
             super(name);
         }
 
         public void actionPerformed(ActionEvent e) {
+            strBuilder = new StringBuilder();
+            totalColor = 4;
+
+            literals = (nodes.get(nodes.size() - 1).index - 1) * totalColor + totalColor;
+            clauses = 0;
+
             try {
-                SATSolverHelper();
-                // String 
+                if (SATSolverHelper()) {
+                    repaint();
+                } else {
+                    String msg = "Graph can't be colored :(";
+                    JOptionPane.showMessageDialog(GraphPanel.this, msg);
+                }
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
         }
 
-        private void SATSolverHelper() throws IOException {
-            int totalColor = 4; // ganti ini gil
-            int literals = (nodes.get(nodes.size() - 1).index - 1) * totalColor + totalColor;
-            int clauses = 0;
+        private boolean SATSolverHelper() throws IOException {
             // node i, warna j = (i - 1)*totalColor + j
 
-            StringBuilder str = new StringBuilder();
+            AdjacentNodesHandler();
+            NodeHasColorHandler();
+            NodeHasOneColorHandler();
 
-            // type 1 (warna node yang disambung edge beda)
+            strBuilder.insert(0, String.format("p cnf %d %d\n", literals, clauses));
+
+            FileWriter writer = new FileWriter("in.txt");
+            writer.write(strBuilder.toString());
+            writer.close();
+
+            ExecuteMiniSat();
+
+            File file = new File("out.txt");
+            Scanner reader = new Scanner(file);
+
+            while (reader.hasNextLine()) {
+                System.out.println(reader.nextLine());
+            }
+
+            reader.close();
+
+            return true;
+        }
+
+        private void AdjacentNodesHandler() {
             for (Edge edge : edges) {
                 int index1 = (edge.n1.index - 1) * totalColor;
                 int index2 = (edge.n2.index - 1) * totalColor;
 
                 for (int i = 1; i <= totalColor; i++) {
-                    str.append(-(index1 + i) + " " + -(index2 + i) + " 0\n");
+                    strBuilder.append(-(index1 + i) + " " + -(index2 + i) + " 0\n");
                     clauses++;
                 }
             }
+        }
 
-            // type 2 (setiap node punya warna)
+        private void NodeHasColorHandler() {
             for (Node node : nodes) {
                 System.out.println("nodes " + node.index);
                 int index = (node.index - 1) * totalColor;
 
                 for (int i = 1; i <= totalColor; i++) {
-                    str.append((index + i) + " ");
+                    strBuilder.append((index + i) + " ");
                 }
 
-                str.append("0\n");
+                strBuilder.append("0\n");
                 clauses++;
             }
+        }
 
-            // type 3 (setiap node pilih 1 warna)
+        private void NodeHasOneColorHandler() {
             for (Node node : nodes) {
                 int index = (node.index - 1) * totalColor;
                 for (int i = 1; i < totalColor; i++) {
                     for (int j = i + 1; j <= totalColor; j++) {
-                        str.append(-(index + i) + " " + -(index + j) + " 0\n");
+                        strBuilder.append(-(index + i) + " " + -(index + j) + " 0\n");
                         clauses++;
                     }
                 }
             }
+        }
 
-            str.insert(0, String.format("p cnf %d %d\n", literals, clauses));
-
-            FileWriter writer = new FileWriter("in.txt");
-            writer.write(str.toString());
-            writer.close();
-
+        private void ExecuteMiniSat() {
             try {
                 String[] args = new String[] {"minisat", "in.txt", "out.txt"};
                 Process proc = new ProcessBuilder(args).start();
@@ -446,7 +479,7 @@ public class GraphPanel extends JComponent {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }   
+        }
     }
 
     private class HelpAction extends AbstractAction {
