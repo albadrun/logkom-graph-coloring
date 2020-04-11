@@ -1,5 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -8,9 +10,8 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 /**
- * @author Ragil, Tirta, Usama
- * Modified from John B. Matthews code (distribution per GPL).
- * https://sites.google.com/site/drjohnbmatthews/graphpanel
+ * @author Ragil, Tirta, Usama Modified from John B. Matthews code (distribution
+ *         per GPL). https://sites.google.com/site/drjohnbmatthews/graphpanel
  */
 public class GraphPanel extends JComponent {
 
@@ -68,8 +69,7 @@ public class GraphPanel extends JComponent {
         }
         if (selecting) {
             g.setColor(Color.darkGray);
-            g.drawRect(mouseRect.x, mouseRect.y,
-                mouseRect.width, mouseRect.height);
+            g.drawRect(mouseRect.x, mouseRect.y, mouseRect.width, mouseRect.height);
         }
     }
 
@@ -114,16 +114,11 @@ public class GraphPanel extends JComponent {
         @Override
         public void mouseDragged(MouseEvent e) {
             if (selecting) {
-                mouseRect.setBounds(
-                    Math.min(mousePt.x, e.getX()),
-                    Math.min(mousePt.y, e.getY()),
-                    Math.abs(mousePt.x - e.getX()),
-                    Math.abs(mousePt.y - e.getY()));
+                mouseRect.setBounds(Math.min(mousePt.x, e.getX()), Math.min(mousePt.y, e.getY()),
+                        Math.abs(mousePt.x - e.getX()), Math.abs(mousePt.y - e.getY()));
                 Node.selectRect(nodes, mouseRect);
             } else {
-                delta.setLocation(
-                    e.getX() - mousePt.x,
-                    e.getY() - mousePt.y);
+                delta.setLocation(e.getX() - mousePt.x, e.getY() - mousePt.y);
                 Node.updatePosition(nodes, delta);
                 mousePt = e.getPoint();
             }
@@ -152,8 +147,7 @@ public class GraphPanel extends JComponent {
         private JPopupMenu popup = new JPopupMenu();
 
         /*
-         * Control Panel constructor.
-         * Unused feature is commented.
+         * Control Panel constructor. Unused feature is commented.
          */
         ControlPanel() {
             this.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -171,13 +165,13 @@ public class GraphPanel extends JComponent {
             // js.setModel(new SpinnerNumberModel(RADIUS, 5, 100, 5));
             // js.addChangeListener(new ChangeListener() {
 
-            //     @Override
-            //     public void stateChanged(ChangeEvent e) {
-            //         JSpinner s = (JSpinner) e.getSource();
-            //         radius = (Integer) s.getValue();
-            //         Node.updateRadius(nodes, radius);
-            //         GraphPanel.this.repaint();
-            //     }
+            // @Override
+            // public void stateChanged(ChangeEvent e) {
+            // JSpinner s = (JSpinner) e.getSource();
+            // radius = (Integer) s.getValue();
+            // Node.updateRadius(nodes, radius);
+            // GraphPanel.this.repaint();
+            // }
             // });
             // this.add(new JLabel("Size:"));
             // this.add(js);
@@ -193,8 +187,8 @@ public class GraphPanel extends JComponent {
 
             // JMenu subMenu = new JMenu("Kind");
             // for (Kind k : Kind.values()) {
-            //     kindCombo.addItem(k);
-            //     subMenu.add(new JMenuItem(new KindItemAction(k)));
+            // kindCombo.addItem(k);
+            // subMenu.add(new JMenuItem(new KindItemAction(k)));
             // }
             // popup.add(subMenu);
             // kindCombo.addActionListener(kind);
@@ -238,15 +232,8 @@ public class GraphPanel extends JComponent {
         public void actionPerformed(ActionEvent e) {
             Color color = control.hueIcon.getColor();
 
-            String colorString = (String) JOptionPane.showInputDialog(
-                GraphPanel.this,
-                "Choose one color",
-                "Input",
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                Node.POSSIBLE_COLORS_STRING,
-                Node.POSSIBLE_COLORS_STRING[0]
-            );
+            String colorString = (String) JOptionPane.showInputDialog(GraphPanel.this, "Choose one color", "Input",
+                    JOptionPane.INFORMATION_MESSAGE, null, Node.POSSIBLE_COLORS_STRING, Node.POSSIBLE_COLORS_STRING[0]);
             color = Node.stringToColor(colorString);
             Node.updateColor(nodes, color);
             if (color != null) {
@@ -386,14 +373,80 @@ public class GraphPanel extends JComponent {
     }
 
     private class RunAction extends AbstractAction {
+        private StringBuilder strBuilder;
 
         public RunAction(String name) {
             super(name);
         }
 
         public void actionPerformed(ActionEvent e) {
-            // implement disini us
+            try {
+                SATSolverHelper();
+                String 
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         }
+
+        private void SATSolverHelper() throws IOException {
+            int totalColor = 4; // ganti ini gil
+            int literals = (nodes.get(nodes.size() - 1).index - 1) * totalColor + totalColor;
+            int clauses = 0;
+            // node i, warna j = (i - 1)*totalColor + j
+
+            StringBuilder str = new StringBuilder();
+
+            // type 1 (warna node yang disambung edge beda)
+            for (Edge edge : edges) {
+                int index1 = (edge.n1.index - 1) * totalColor;
+                int index2 = (edge.n2.index - 1) * totalColor;
+
+                for (int i = 1; i <= totalColor; i++) {
+                    str.append(-(index1 + i) + " " + -(index2 + i) + " 0\n");
+                    clauses++;
+                }
+            }
+
+            // type 2 (setiap node punya warna)
+            for (Node node : nodes) {
+                System.out.println("nodes " + node.index);
+                int index = (node.index - 1) * totalColor;
+
+                for (int i = 1; i <= totalColor; i++) {
+                    str.append((index + i) + " ");
+                }
+
+                str.append("0\n");
+                clauses++;
+            }
+
+            // type 3 (setiap node pilih 1 warna)
+            for (Node node : nodes) {
+                int index = (node.index - 1) * totalColor;
+                for (int i = 1; i < totalColor; i++) {
+                    for (int j = i + 1; j <= totalColor; j++) {
+                        str.append(-(index + i) + " " + -(index + j) + " 0\n");
+                        clauses++;
+                    }
+                }
+            }
+
+            str.insert(0, String.format("p cnf %d %d\n", literals, clauses));
+
+            FileWriter writer = new FileWriter("in.txt");
+            writer.write(str.toString());
+            writer.close();
+
+            try {
+                String[] args = new String[] {"minisat", "in.txt", "out.txt"};
+                Process proc = new ProcessBuilder(args).start();
+                proc.waitFor();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }   
     }
 
     private class HelpAction extends AbstractAction {
@@ -458,7 +511,7 @@ public class GraphPanel extends JComponent {
         private Rectangle b = new Rectangle();
         private int index = 1;
 
-        private static int indexCounter = 0;
+        private static int indexCounter = 1;
 
         private static final String K_NONE = "None";
         private static final String K_RED = "Red";
