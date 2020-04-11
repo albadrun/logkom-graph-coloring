@@ -195,14 +195,16 @@ public class GraphPanel extends JComponent {
                         Node node = nodes.get(i);
                         int pos = Arrays.asList(Node.POSSIBLE_COLORS).indexOf(node.getColor());
 
-                        if (pos + 1 >= numColor) {
+                        // System.out.println(pos);
+
+                        if (pos >= numColor) {
                             node.setColor(null);
                         }
                     }
 
                     int huePos = Arrays.asList(Node.POSSIBLE_COLORS).indexOf(control.hueIcon.getColor());
 
-                    if (huePos + 1 >= numColor) {
+                    if (huePos >= numColor) {
                         control.hueIcon.setColor(Node.POSSIBLE_COLORS[numColor - 1]);
                         control.repaint();
                     }
@@ -397,12 +399,17 @@ public class GraphPanel extends JComponent {
                 Node n1 = nodes.get(rnd.nextInt(8) + lastIndex);
                 Node n2 = nodes.get(rnd.nextInt(8) + lastIndex);
 
+                if (n1.index == n2.index) {
+                    continue;
+                }
+
                 boolean isExists = false;
                 for (int j = 0; j < edges.size(); j++) {
                     Node fNode = edges.get(j).getFirstNode();
                     Node sNode = edges.get(j).getSecondNode();
 
-                    if ((fNode.equals(n1) && sNode.equals(n2)) || (fNode.equals(n2) && sNode.equals(n1))) {
+                    if ((fNode.index == n1.index && sNode.index == n2.index)
+                            || (fNode.index == n2.index && sNode.index == n1.index)) {
                         isExists = true;
                         break;
                     }
@@ -428,6 +435,10 @@ public class GraphPanel extends JComponent {
 
         public void actionPerformed(ActionEvent e) {
             strBuilder = new StringBuilder();
+
+            if (nodes.size() == 0) {
+                return;
+            }
 
             literals = (nodes.get(nodes.size() - 1).index - 1) * numColor + numColor;
             clauses = 0;
@@ -464,8 +475,8 @@ public class GraphPanel extends JComponent {
 
             while (reader.hasNextLine()) {
                 answers = reader.nextLine();
-                System.out.println(answers);
-                
+                // System.out.println(answers);
+
                 if (answers.equals("UNSAT")) {
                     reader.close();
                     return false;
@@ -473,7 +484,7 @@ public class GraphPanel extends JComponent {
             }
 
             reader.close();
-            
+
             String[] arrOfLiterals = answers.split(" ");
             ArrayList<Integer> colors = new ArrayList<>();
 
@@ -498,6 +509,8 @@ public class GraphPanel extends JComponent {
         }
 
         private void AdjacentNodesHandler() {
+            // System.out.println(numColor);
+            // System.out.println(edges.size());
             for (Edge edge : edges) {
                 int index1 = (edge.n1.index - 1) * numColor;
                 int index2 = (edge.n2.index - 1) * numColor;
@@ -832,7 +845,7 @@ public class GraphPanel extends JComponent {
 
         /**
          * Update node's color
-         */ 
+         */
         public static void updateColor(Node node, Color color) {
             node.color = color;
         }
