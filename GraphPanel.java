@@ -456,9 +456,9 @@ public class GraphPanel extends JComponent {
         private Kind kind;
         private boolean selected = false;
         private Rectangle b = new Rectangle();
-        private int index = 1;
+        private int index;
 
-        private static int indexCounter = 0;
+        private static int indexCounter = 1;
 
         private static final String K_NONE = "None";
         private static final String K_RED = "Red";
