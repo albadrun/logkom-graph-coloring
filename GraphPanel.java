@@ -434,6 +434,14 @@ public class GraphPanel extends JComponent {
         }
 
         public void actionPerformed(ActionEvent e) {
+            boolean check = CheckMiniSat();
+            if (!check) {
+                String msg = "You don't have minisat :(\nPlease install minisat";
+                JOptionPane.showMessageDialog(GraphPanel.this, msg);
+
+                return;
+            }
+
             strBuilder = new StringBuilder();
 
             if (nodes.size() == 0) {
@@ -503,6 +511,18 @@ public class GraphPanel extends JComponent {
                 String colorString = Node.POSSIBLE_COLORS_STRING[(number % numColor) + 1];
                 Color color = Node.stringToColor(colorString);
                 Node.updateColor(node, color);
+            }
+
+            return true;
+        }
+
+        private boolean CheckMiniSat() {
+            try {
+                String[] args = new String[] {"minisat", "-h"};
+                Process proc = new ProcessBuilder(args).start();
+                proc.waitFor();
+            } catch (Exception e) {
+                return false;
             }
 
             return true;
