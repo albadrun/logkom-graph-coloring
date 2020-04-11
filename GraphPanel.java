@@ -382,7 +382,7 @@ public class GraphPanel extends JComponent {
         public void actionPerformed(ActionEvent e) {
             try {
                 SATSolverHelper();
-                String 
+                // String 
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
