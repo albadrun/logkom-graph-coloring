@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -18,10 +19,14 @@ public class GraphPanel extends JComponent {
     private static final int WIDE = 640;
     private static final int HIGH = 480;
     private static final int RADIUS = 25;
+    private static final int NUM_COLOR = 3;
     private static final Random rnd = new Random();
+
+
     private ControlPanel control = new ControlPanel();
     private int radius = RADIUS;
     private Kind kind = Kind.Circular;
+    private int numColor = NUM_COLOR;
     private List<Node> nodes = new ArrayList<Node>();
     private List<Node> selected = new ArrayList<Node>();
     private List<Edge> edges = new ArrayList<Edge>();
@@ -176,6 +181,35 @@ public class GraphPanel extends JComponent {
             // this.add(new JLabel("Size:"));
             // this.add(js);
 
+            JSpinner js = new JSpinner();
+            js.setModel(new SpinnerNumberModel(NUM_COLOR, 1, 8, 1));
+            js.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    JSpinner s = (JSpinner) e.getSource();
+                    numColor = (Integer) s.getValue();
+                    for (int i = 0; i < nodes.size(); i++) {
+                        Node node = nodes.get(i);
+                        int pos = Arrays.asList(Node.POSSIBLE_COLORS).indexOf(node.getColor());
+
+                        if (pos + 1 >= numColor) {
+                            node.setColor(null);
+                        }
+                    }
+
+                    int huePos = Arrays.asList(Node.POSSIBLE_COLORS).indexOf(control.hueIcon.getColor());
+
+                    if (huePos + 1 >= numColor) {
+                        control.hueIcon.setColor(Node.POSSIBLE_COLORS[numColor - 1]);
+                        control.repaint();
+                    }
+
+                    GraphPanel.this.repaint();
+                }
+            });
+            this.add(new JLabel("Num Color:"));
+            this.add(js);
+
             this.add(new JButton(random));
             this.add(new JButton(run));
             this.add(new JButton(help));
@@ -232,8 +266,16 @@ public class GraphPanel extends JComponent {
         public void actionPerformed(ActionEvent e) {
             Color color = control.hueIcon.getColor();
 
-            String colorString = (String) JOptionPane.showInputDialog(GraphPanel.this, "Choose one color", "Input",
-                    JOptionPane.INFORMATION_MESSAGE, null, Node.POSSIBLE_COLORS_STRING, Node.POSSIBLE_COLORS_STRING[0]);
+            String colorString = (String) JOptionPane.showInputDialog(
+                GraphPanel.this,
+                "Choose one color",
+                "Input",
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                Arrays.copyOfRange(Node.POSSIBLE_COLORS_STRING, 0, numColor + 1),
+                Node.POSSIBLE_COLORS_STRING[0]
+            );
+
             color = Node.stringToColor(colorString);
             Node.updateColor(nodes, color);
             if (color != null) {
@@ -382,14 +424,14 @@ public class GraphPanel extends JComponent {
         public void actionPerformed(ActionEvent e) {
             try {
                 SATSolverHelper();
-                // String 
+                // String
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
         }
 
         private void SATSolverHelper() throws IOException {
-            int totalColor = 4; // ganti ini gil
+            int totalColor = numColor;
             int literals = (nodes.get(nodes.size() - 1).index - 1) * totalColor + totalColor;
             int clauses = 0;
             // node i, warna j = (i - 1)*totalColor + j
@@ -409,7 +451,6 @@ public class GraphPanel extends JComponent {
 
             // type 2 (setiap node punya warna)
             for (Node node : nodes) {
-                System.out.println("nodes " + node.index);
                 int index = (node.index - 1) * totalColor;
 
                 for (int i = 1; i <= totalColor; i++) {
@@ -446,7 +487,7 @@ public class GraphPanel extends JComponent {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }   
+        }
     }
 
     private class HelpAction extends AbstractAction {
@@ -517,6 +558,11 @@ public class GraphPanel extends JComponent {
         private static final String K_RED = "Red";
         private static final String K_GREEN = "Green";
         private static final String K_BLUE = "Blue";
+        private static final String K_YELLOW = "Yellow";
+        private static final String K_GRAY = "Gray";
+        private static final String K_PINK = "Pink";
+        private static final String K_CYAN = "Cyan";  // Kacian :(
+        private static final String K_MAGENTA = "Magenta";
 
         private static final int STROKE_SIZE = 3;
         private static final int SELECTED_STROKE_SIZE = 1;
@@ -525,7 +571,12 @@ public class GraphPanel extends JComponent {
         private static final Color NONE_COLOR = Color.white;
 
         public static final String POSSIBLE_COLORS_STRING[] = {
-            Node.K_NONE, Node.K_RED, Node.K_GREEN, Node.K_BLUE
+            Node.K_NONE, Node.K_RED, Node.K_GREEN, Node.K_BLUE,
+            Node.K_YELLOW, Node.K_GRAY, Node.K_PINK, Node.K_CYAN, Node.K_MAGENTA
+        };
+        private static final Color POSSIBLE_COLORS[] = {
+            Color.red, Color.green, Color.blue, Color.yellow,
+            Color.gray, Color.pink, Color.cyan, Color.magenta
         };
 
         /**
@@ -598,6 +649,14 @@ public class GraphPanel extends JComponent {
          */
         public Point getLocation() {
             return p;
+        }
+
+        public Color getColor() {
+            return this.color;
+        }
+
+        public void setColor(Color color) {
+            this.color = color;
         }
 
         /**
@@ -730,12 +789,9 @@ public class GraphPanel extends JComponent {
                 return null;
             }
 
-            if (colorString.equals(Node.K_RED)) {
-                return Color.red;
-            } else if (colorString.equals(Node.K_GREEN)) {
-                return Color.green;
-            } else if (colorString.equals(Node.K_BLUE)) {
-                return Color.blue;
+            int pos = Arrays.asList(Node.POSSIBLE_COLORS_STRING).indexOf(colorString);
+            if (pos >= 0) {
+                return Node.POSSIBLE_COLORS[pos - 1];
             }
 
             return null;
