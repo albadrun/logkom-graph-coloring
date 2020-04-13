@@ -258,6 +258,7 @@ public class GraphPanel extends JComponent {
         public void actionPerformed(ActionEvent e) {
             nodes.clear();
             edges.clear();
+            Node.indexCounter = 1;
             repaint();
         }
     }
@@ -305,10 +306,25 @@ public class GraphPanel extends JComponent {
                 for (int i = 0; i < selected.size() - 1; ++i) {
                     Node n1 = selected.get(i);
                     Node n2 = selected.get(i + 1);
-                    edges.add(new Edge(n1, n2));
+
+                    if (newEdge(n1, n2)) {
+                        edges.add(new Edge(n1, n2));
+                    }
                 }
             }
             repaint();
+        }
+
+        private boolean newEdge(Node n1, Node n2) {
+            for (Edge e : edges) {
+                if (e.n1.index == n1.index && e.n2.index == n2.index) {
+                    return false;
+                } else if (e.n1.index == n2.index && e.n2.index == n1.index) {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 
