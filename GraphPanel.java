@@ -480,9 +480,10 @@ public class GraphPanel extends JComponent {
         }
 
         private boolean SATSolverHelper() throws IOException {
-            AdjacentNodesHandler();
-            NodeHasColorHandler();
-            NodeHasOneColorHandler();
+            adjacentNodesHandler();
+            nodeHasColorHandler();
+            nodeHasOneColorHandler();
+            coloredNodesHandler();
 
             strBuilder.insert(0, String.format("p cnf %d %d\n", literals, clauses));
 
@@ -517,14 +518,21 @@ public class GraphPanel extends JComponent {
 
                 if (lit > 0) {
                     colors.add(lit);
+                    // System.out.println(">>" + lit);
                 }
             }
 
             for (int i = 0; i < nodes.size(); i++) {
                 Node node = nodes.get(i);
                 int number = colors.get(i);
+                int colorIndex = number % numColor;
 
-                String colorString = Node.POSSIBLE_COLORS_STRING[(number % numColor) + 1];
+                if (colorIndex == 0) {
+                    colorIndex = numColor;
+                }
+
+                String colorString = Node.POSSIBLE_COLORS_STRING[colorIndex];
+                // System.out.println(colorString);
                 Color color = Node.stringToColor(colorString);
                 Node.updateColor(node, color);
             }
@@ -544,7 +552,7 @@ public class GraphPanel extends JComponent {
             return true;
         }
 
-        private void AdjacentNodesHandler() {
+        private void adjacentNodesHandler() {
             // System.out.println(numColor);
             // System.out.println(edges.size());
             for (Edge edge : edges) {
@@ -558,7 +566,7 @@ public class GraphPanel extends JComponent {
             }
         }
 
-        private void NodeHasColorHandler() {
+        private void nodeHasColorHandler() {
             for (Node node : nodes) {
                 int index = (node.index - 1) * numColor;
 
@@ -571,12 +579,24 @@ public class GraphPanel extends JComponent {
             }
         }
 
-        private void NodeHasOneColorHandler() {
+        private void nodeHasOneColorHandler() {
             for (Node node : nodes) {
                 int index = (node.index - 1) * numColor;
                 for (int i = 1; i < numColor; i++) {
                     for (int j = i + 1; j <= numColor; j++) {
                         strBuilder.append(-(index + i) + " " + -(index + j) + " 0\n");
+                        clauses++;
+                    }
+                }
+            }
+        }
+
+        private void coloredNodesHandler() {
+            for (Node node : nodes) {
+                for (int i = 0; i < numColor; i++) {
+                    if (node.color == Node.POSSIBLE_COLORS[i]) {
+                        // System.out.println(node.index + " = " + i + " " + ((node.index - 1) * numColor + (i + 1)));
+                        strBuilder.append(((node.index - 1) * numColor + (i + 1)) + " 0\n");
                         clauses++;
                     }
                 }
@@ -903,7 +923,7 @@ public class GraphPanel extends JComponent {
             }
 
             int pos = Arrays.asList(Node.POSSIBLE_COLORS_STRING).indexOf(colorString);
-            if (pos >= 0) {
+            if (pos > 0) {
                 return Node.POSSIBLE_COLORS[pos - 1];
             }
 
